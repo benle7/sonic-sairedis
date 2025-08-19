@@ -40,6 +40,7 @@ struct cmdOptions
         enableDebugLogs    = false;
         dumpObjects        = false;
         fullDiscovery      = false;
+        queryApiVersion    = false;
         saiApiLogLevel     = SAI_LOG_LEVEL_NOTICE;
     }
 
@@ -49,6 +50,7 @@ struct cmdOptions
     bool enableDebugLogs;
     bool fullDiscovery;
     bool dumpObjects;
+    bool queryApiVersion;
     sai_log_level_t saiApiLogLevel;
 };
 
@@ -448,7 +450,7 @@ static void printUsage()
     SWSS_LOG_ENTER();
 
     std::cout << std::endl;
-    std::cout << "Usage: saidiscovery [-I] [-D] [-f] [-d] [-p profile] [-w] [-h]" << std::endl << std::endl;
+    std::cout << "Usage: saidiscovery [-I] [-D] [-f] [-d] [-p profile] [-w] [-V] [-h]" << std::endl << std::endl;
     std::cout << "    -I --noInitSwitch:" << std::endl;
     std::cout << "        Try connect to SDK instead of performing init" << std::endl;
     std::cout << "    -D --dumpObjects:" << std::endl;
@@ -461,6 +463,8 @@ static void printUsage()
     std::cout << "        Provide profile map file" << std::endl;
     std::cout << "    -w --logWarnings" << std::endl;
     std::cout << "        Logs all warnings" << std::endl;
+    std::cout << "    -V --queryApiVersion" << std::endl;
+    std::cout << "        Query SAI API version and exit" << std::endl;
     std::cout << "    -h --help:" << std::endl;
     std::cout << "        Print out this message" << std::endl << std::endl;
 }
@@ -477,11 +481,12 @@ static void handleCmdLine(int argc, char **argv)
         { "logWarnings",      no_argument,       0, 'w' },
         { "noInitSwitch",     no_argument,       0, 'I' },
         { "profile",          required_argument, 0, 'p' },
+        { "queryApiVersion",  no_argument,       0, 'V' },
         { "help",             no_argument,       0, 'h' },
         { 0,                  0,                 0,  0  }
     };
 
-    const char* const optstring = "DdwIp:hf";
+    const char* const optstring = "DdwIp:hfV";
 
     while (true)
     {
@@ -522,6 +527,10 @@ static void handleCmdLine(int argc, char **argv)
                 gOptions.profileMapFile = std::string(optarg);
                 break;
 
+            case 'V':
+                gOptions.queryApiVersion = true;
+                break;
+
             case 'h':
                 printUsage();
                 exit(EXIT_SUCCESS);
@@ -553,6 +562,20 @@ int main(int argc, char **argv)
     auto vendorSai = std::make_shared<syncd::VendorSai>();
 
     auto sai = std::make_shared<saimeta::Meta>(vendorSai);
+
+    if (gOptions.queryApiVersion)
+    {
+        sai_api_version_t version;
+        sai_status_t status = sai->queryApiVersion(&version);
+        if (status == SAI_STATUS_SUCCESS)
+        {
+            std::cout << "SAI_API_VERSION:" << version << std::endl;
+            exit(EXIT_SUCCESS);
+        }
+        SWSS_LOG_ERROR("Failed to query SAI API version: %s", 
+            sai_serialize_status(status).c_str());
+        exit(EXIT_FAILURE);
+    }
 
     sai_status_t status = sai->apiInitialize(0, (sai_service_method_table_t*)&test_services);
 
