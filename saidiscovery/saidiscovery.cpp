@@ -580,9 +580,9 @@ int main(int argc, char **argv)
         status = sai->queryApiVersion(&version);
         if (status == SAI_STATUS_SUCCESS)
         {
-            std::cout << version << std::endl;
+            std::cout << "SAI_API_VERSION:" << version << std::endl;
         }
-        else 
+        else
         {
             SWSS_LOG_ERROR("Failed to query SAI API version: %s", 
                           sai_serialize_status(status).c_str());
