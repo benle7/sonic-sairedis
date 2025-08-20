@@ -563,6 +563,20 @@ int main(int argc, char **argv)
 
     auto sai = std::make_shared<saimeta::Meta>(vendorSai);
 
+    if (gOptions.queryApiVersion)
+    {
+        sai_api_version_t version;
+        sai_status_t status = sai->queryApiVersion(&version);
+        if (status == SAI_STATUS_SUCCESS)
+        {
+            std::cout << "SAI_API_VERSION:" << version << std::endl;
+            exit(EXIT_SUCCESS);
+        }
+        SWSS_LOG_ERROR("Failed to query SAI API version: %s", 
+            sai_serialize_status(status).c_str());
+        exit(EXIT_FAILURE);
+    }
+
     sai_status_t status = sai->apiInitialize(0, (sai_service_method_table_t*)&test_services);
 
     if (status != SAI_STATUS_SUCCESS)
@@ -571,33 +585,6 @@ int main(int argc, char **argv)
                 sai_serialize_status(status).c_str());
 
         exit(EXIT_FAILURE);
-    }
-
-    // Handle queryApiVersion option
-    if (gOptions.queryApiVersion)
-    {
-        sai_api_version_t version;
-        status = sai->queryApiVersion(&version);
-        if (status == SAI_STATUS_SUCCESS)
-        {
-            std::cout << "SAI_API_VERSION:" << version << std::endl;
-        }
-        else
-        {
-            SWSS_LOG_ERROR("Failed to query SAI API version: %s", 
-                          sai_serialize_status(status).c_str());
-            sai->apiUninitialize();
-            exit(EXIT_FAILURE);
-        }
-        status = sai->apiUninitialize();
-        if (status != SAI_STATUS_SUCCESS)
-        {
-            SWSS_LOG_ERROR("sai_api_uninitialize failed: %s",
-                    sai_serialize_status(status).c_str());
-
-            exit(EXIT_FAILURE);
-        }
-        exit(EXIT_SUCCESS);
     }
 
     for (int api = 1; api < SAI_API_MAX; api++)
